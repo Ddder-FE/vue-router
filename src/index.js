@@ -3,14 +3,10 @@
 import { install } from './install'
 import { START } from './util/route'
 import { assert } from './util/warn'
-import { inBrowser } from './util/dom'
 import { cleanPath } from './util/path'
 import { createMatcher } from './create-matcher'
 import { normalizeLocation } from './util/location'
-import { supportsPushState } from './util/push-state'
 
-import { HashHistory } from './history/hash'
-import { HTML5History } from './history/html5'
 import { AbstractHistory } from './history/abstract'
 
 import type { Matcher } from './create-matcher'
@@ -25,7 +21,7 @@ export default class VueRouter {
   readyCbs: Array<Function>;
   options: RouterOptions;
   mode: string;
-  history: HashHistory | HTML5History | AbstractHistory;
+  history: AbstractHistory;
   matcher: Matcher;
   fallback: boolean;
   beforeHooks: Array<?NavigationGuard>;
@@ -40,32 +36,8 @@ export default class VueRouter {
     this.resolveHooks = []
     this.afterHooks = []
     this.matcher = createMatcher(options.routes || [], this)
-
-    let mode = options.mode || 'hash'
-    this.fallback = mode === 'history' && !supportsPushState && options.fallback !== false
-    if (this.fallback) {
-      mode = 'hash'
-    }
-    if (!inBrowser) {
-      mode = 'abstract'
-    }
-    this.mode = mode
-
-    switch (mode) {
-      case 'history':
-        this.history = new HTML5History(this, options.base)
-        break
-      case 'hash':
-        this.history = new HashHistory(this, options.base, this.fallback)
-        break
-      case 'abstract':
-        this.history = new AbstractHistory(this, options.base)
-        break
-      default:
-        if (process.env.NODE_ENV !== 'production') {
-          assert(false, `invalid mode: ${mode}`)
-        }
-    }
+    this.mode = 'abstract'
+    this.history = new AbstractHistory(this, options.base)
   }
 
   match (
@@ -96,22 +68,7 @@ export default class VueRouter {
 
     this.app = app
 
-    const history = this.history
-
-    if (history instanceof HTML5History) {
-      history.transitionTo(history.getCurrentLocation())
-    } else if (history instanceof HashHistory) {
-      const setupHashListener = () => {
-        history.setupListeners()
-      }
-      history.transitionTo(
-        history.getCurrentLocation(),
-        setupHashListener,
-        setupHashListener
-      )
-    }
-
-    history.listen(route => {
+    this.history.listen(route => {
       this.apps.forEach((app) => {
         app._route = route
       })
@@ -195,7 +152,7 @@ export default class VueRouter {
     const route = this.match(location, current)
     const fullPath = route.redirectedFrom || route.fullPath
     const base = this.history.base
-    const href = createHref(base, fullPath, this.mode)
+    const href = createHref(base, fullPath)
     return {
       location,
       route,
@@ -222,14 +179,9 @@ function registerHook (list: Array<any>, fn: Function): Function {
   }
 }
 
-function createHref (base: string, fullPath: string, mode) {
-  var path = mode === 'hash' ? '#' + fullPath : fullPath
-  return base ? cleanPath(base + '/' + path) : path
+function createHref (base: string, fullPath: string) {
+  return base ? cleanPath(base + '/' + fullPath) : fullPath
 }
 
 VueRouter.install = install
 VueRouter.version = '__VERSION__'
-
-if (inBrowser && window.Vue) {
-  window.Vue.use(VueRouter)
-}
