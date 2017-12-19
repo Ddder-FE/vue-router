@@ -17,6 +17,10 @@ export default {
       type: String,
       default: 'div'
     },
+    value: {
+      type: Boolean,
+      default: false
+    },
     exact: Boolean,
     append: Boolean,
     replace: Boolean,
@@ -90,6 +94,8 @@ export default {
       class: classes,
       on: on
     }
+
+    this.$emit('input', classes[activeClass]);
 
     let $el = this.$slots.default
 

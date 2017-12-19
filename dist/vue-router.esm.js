@@ -1,5 +1,5 @@
 /**
-  * vue-router v3.0.1
+  * vue-router v3.0.2
   * (c) 2017 Evan You
   * @license MIT
   */
@@ -391,6 +391,10 @@ var Link = {
       type: String,
       default: 'div'
     },
+    value: {
+      type: Boolean,
+      default: false
+    },
     exact: Boolean,
     append: Boolean,
     replace: Boolean,
@@ -468,6 +472,8 @@ var Link = {
       class: classes,
       on: on
     };
+
+    this.$emit('input', classes[activeClass]);
 
     var $el = this.$slots.default;
 
@@ -2127,6 +2133,6 @@ function createHref (base, fullPath) {
 }
 
 VueRouter.install = install;
-VueRouter.version = '3.0.1';
+VueRouter.version = '3.0.2';
 
 export default VueRouter;
